@@ -18,7 +18,7 @@ def main():
     
     args = parser.parse_args()
     
-    console = Console()
+    console = Console(record=True)
     
     try:
         # Charger la configuration

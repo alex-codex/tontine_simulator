@@ -309,7 +309,7 @@ class TontineExecutor:
                     )
     
     def _process_end_of_cycle(self):
-        # ...existing code not needed here now; cycle processing moved into run_simulation...
+        
         pass
     
     def _calculate_new_arrivals(self) -> int:
@@ -585,6 +585,8 @@ class TontineLogger:
         
         self.console.print("[green]Full simulation data has been saved to the output directory.")
         self.console.print()
+
+        self.console.save_html(self.output_dir/"simulation.html")
     
     def save_state_to_json(self, state: TontineState, month_or_label):
         """Save the current state to a JSON file"""
@@ -687,13 +689,12 @@ class TontineLogger:
         else:
             self.console.print("[bold red]No participants exited this cycle.[/bold red]")
         if new_member_names:
-            self.console.print(f"[bold blue]New Members Arrived:[/bold green] {', '.join(new_member_names)}")
+            self.console.print(f"[bold blue]New Members Arrived:[/bold blue] {', '.join(new_member_names)}")
         else:
-            self.console.print("[bold blue]No new members this cycle.[/bold green]")
+            self.console.print("[bold blue]No new members this cycle.[/bold blue]")
         
         #Total contribution
         self.console.print('"')
 
-        self.console.print()
         
         self.log_cycle_end_participants(state=state)  
