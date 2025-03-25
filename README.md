@@ -101,4 +101,5 @@ La classe `IndividualParticipantConfig` définit les comportements des participa
 
 
 
-### TODO : Détails sur la modélisation stochastique et profils de participants
+
+### TODO : Détails sur la modélisation probabilistique (Executer et analyser des simulations avec différents profils de participants).
