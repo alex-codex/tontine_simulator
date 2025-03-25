@@ -25,9 +25,8 @@ class ParticipantState:
     total_borrowed: float
     total_repaid: float
     is_eligible_for_loan: bool
-    monthly_distributions_received: float = 0.0  # Renamed from round_robin_payouts_received
-
-@dataclass
+    monthly_distributions_received: float = 0.0  
+    
 class TontineState:
     current_date: datetime
     cycle_number: int

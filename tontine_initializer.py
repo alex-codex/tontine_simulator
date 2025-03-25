@@ -22,7 +22,7 @@ class TontineInitializer:
                 config_data = json.load(config_file)
                 
             tontine_data = config_data["tontine"]
-            # Use provided num_participants_start if available; otherwise, if participants are defined, use their count.
+            
             num_start = tontine_data.get("num_participants_start", len(config_data.get("participants", [])))
             
             # Extract tontine config
