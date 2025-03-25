@@ -26,13 +26,14 @@ class TontineExecutor:
         self, 
         tontine_config: TontineConfig, 
         participant_configs: List[IndividualParticipantConfig],
+        console:Console,
         initial_state: Optional[TontineState] = None,
         output_dir: str = "simulation_results"
     ):
         self.tontine_config = tontine_config
         self.participant_configs = participant_configs
         self.state = initial_state or TontineInitializer.create_initial_state(tontine_config)
-        self.console = Console()
+        self.console = console
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True, parents=True)
         

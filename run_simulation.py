@@ -34,6 +34,7 @@ def main():
         executor = TontineExecutor(
             tontine_config=tontine_config,
             participant_configs=participant_configs,
+            console=console,
             initial_state=initial_state,
             output_dir=args.output
         )
@@ -43,7 +44,7 @@ def main():
     except Exception as e:
         console.print(f"[bold red]Erreur : {str(e)}[/bold red]")
         raise e
-        return 1
+        
     
     return 0
 
