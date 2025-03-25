@@ -1,0 +1,108 @@
+{
+  "tontine": {
+    "num_partipiants_min": 1,
+    "monthly_contrib": 100.0,
+    "monthly_interest_rate": 0.02,
+    "arrival_probability": 0.15,
+    "cycle_duration_months": 12,
+    "max_cycles": 5,
+    "emergency_fund_percentage": 0.1,
+    "max_loan_amount": 1000.0,
+    "late_payment_penalty": 0.05,
+    "max_simultaneous_loans": 2,
+    "min_membership_months": 3,
+    "monthly_distribution_percentage": 0.5
+  },
+  "participants": [
+    {
+      "id": "P001",
+      "name": "Participant 1",
+      "default_probability": 0.01,
+      "loan_prob": 0.05,
+      "loan_reemboursement_prob": 0.25,
+      "exit_probability": 0.03,
+      "max_consecutive_defaults": 3
+    },
+    {
+      "id": "P002",
+      "name": "Participant 2",
+      "default_probability": 0.05,
+      "loan_prob": 0.1,
+      "loan_reemboursement_prob": 0.15,
+      "exit_probability": 0.08,
+      "max_consecutive_defaults": 3
+    },
+    {
+      "id": "P003",
+      "name": "Participant 3",
+      "default_probability": 0.02,
+      "loan_prob": 0.15,
+      "loan_reemboursement_prob": 0.30,
+      "exit_probability": 0.02,
+      "max_consecutive_defaults": 4
+    },
+    {
+      "id": "P004",
+      "name": "Participant 4",
+      "default_probability": 0.07,
+      "loan_prob": 0.08,
+      "loan_reemboursement_prob": 0.20,
+      "exit_probability": 0.05,
+      "max_consecutive_defaults": 2
+    },
+    {
+      "id": "P005",
+      "name": "Participant 5",
+      "default_probability": 0.03,
+      "loan_prob": 0.12,
+      "loan_reemboursement_prob": 0.35,
+      "exit_probability": 0.01,
+      "max_consecutive_defaults": 3
+    },
+    {
+      "id": "P006",
+      "name": "Participant 6",
+      "default_probability": 0.06,
+      "loan_prob": 0.18,
+      "loan_reemboursement_prob": 0.18,
+      "exit_probability": 0.07,
+      "max_consecutive_defaults": 2
+    },
+    {
+      "id": "P007",
+      "name": "Participant 7",
+      "default_probability": 0.01,
+      "loan_prob": 0.06,
+      "loan_reemboursement_prob": 0.40,
+      "exit_probability": 0.04,
+      "max_consecutive_defaults": 5
+    },
+    {
+      "id": "P008",
+      "name": "Participant 8",
+      "default_probability": 0.04,
+      "loan_prob": 0.10,
+      "loan_reemboursement_prob": 0.25,
+      "exit_probability": 0.03,
+      "max_consecutive_defaults": 3
+    },
+    {
+      "id": "P009",
+      "name": "Participant 9",
+      "default_probability": 0.08,
+      "loan_prob": 0.20,
+      "loan_reemboursement_prob": 0.15,
+      "exit_probability": 0.09,
+      "max_consecutive_defaults": 2
+    },
+    {
+      "id": "P010",
+      "name": "Participant 10",
+      "default_probability": 0.02,
+      "loan_prob": 0.03,
+      "loan_reemboursement_prob": 0.45,
+      "exit_probability": 0.02,
+      "max_consecutive_defaults": 4
+    }
+  ]
+}
