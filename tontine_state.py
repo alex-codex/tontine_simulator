@@ -3,6 +3,8 @@ from datetime import datetime
 from typing import Dict, List
 from enum import Enum
 
+from tontine_config import IndividualParticipantConfig
+
 class ParticipantStatus(Enum):
     ACTIVE = "active"
     DEFAULTED = "defaulted"
@@ -19,12 +21,10 @@ class ParticipantState:
     active_loans: List[float]
     missed_payments: int
     consecutive_defaults: int
-    credit_score: float
     last_payment_date: datetime
     total_borrowed: float
     total_repaid: float
     is_eligible_for_loan: bool
-    guarantor_id: str | None
     monthly_distributions_received: float = 0.0  # Renamed from round_robin_payouts_received
 
 @dataclass

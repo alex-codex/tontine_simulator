@@ -71,7 +71,6 @@ La configuration de la tontine est définie par la classe `TontineConfig` avec l
 
 | Paramètre | Type | Description |
 |-----------|------|-------------|
-| `num_participants_start` | `int` | Nombre initial de participants |
 | `num_participants_min` | `int` | Seuil minimum de participants avant faillite |
 | `monthly_contrib` | `float` | Montant de la cotisation mensuelle par participant |
 | `monthly_interest_rate` | `float` | Taux d'intérêt mensuel appliqué aux prêts |
