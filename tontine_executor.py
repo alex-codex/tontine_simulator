@@ -646,12 +646,11 @@ class TontineLogger:
         self.console.print(f"Total received to date: ${participant.monthly_distributions_received:.2f}")
         self.console.print()
 
-    # New method to log the initial participants state
     def log_initial_participants(self, state: TontineState):
         self.console.print("[bold blue]=== INITIAL PARTICIPANTS STATE ===[/bold blue]")
         self._log_detailed_participant_states(state)
     
-    # New method to log participants state at the end of a cycle
+    
     def log_cycle_end_participants(self, state: TontineState):
         self.console.print("[bold blue]=== CYCLE END PARTICIPANTS STATE ===[/bold blue]")
         self._log_detailed_participant_states(state)
@@ -664,10 +663,7 @@ class TontineLogger:
         header = f"[bold white on blue] TONTINE STATE - MONTH {month_num} (CYCLE {state.cycle_number}, MONTH {state.month_in_cycle}) [/]"
         self.console.print(Panel(header, expand=False))
         self.console.print()
-        # Reuse existing panels for financial summary, risk metrics, participant summary, cycle stats
-        # ...existing panel printing code for financial summary...
-        # (Assume panels printed similarly as before; omitted here for brevity)
-        # Print extra monthly info:
+     
         extra_text = Text()
         extra_text.append("Beneficiary: ", style="white")
         extra_text.append(f"{beneficiary}\n", style="green")
@@ -694,6 +690,7 @@ class TontineLogger:
             self.console.print(f"[bold blue]New Members Arrived:[/bold green] {', '.join(new_member_names)}")
         else:
             self.console.print("[bold blue]No new members this cycle.[/bold green]")
+        
         #Total contribution
         self.console.print('"')
 

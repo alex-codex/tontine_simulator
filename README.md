@@ -1,65 +1,68 @@
-# Tontine Simulator
+# Simulateur de Tontine
 ------------------------------------
 
 ## Description
 
-A simulation tool for modeling and analyzing tontine operations. A tontine is a group-based financial arrangement where members make regular contributions to a common fund and can benefit from loans, with specific rules for membership, contributions, and loan distribution.
+Outil de simulation pour modéliser et analyser le fonctionnement d'une tontine. Une tontine est un système financier collectif où les membres effectuent des contributions régulières dans un fonds commun et peuvent bénéficier de prêts, selon des règles spécifiques de participation, contributions et distribution des prêts.
 
-## Key Features
+## Principales Caractéristiques
 
-- Realistic simulation of tontine dynamics
-- Participant behavior modeling including:
-  - Payment defaults
-  - Loan requests
-  - Member arrivals and departures
-- Financial tracking including:
-  - Treasury balance
-  - Emergency fund
-  - Loan management
-  - Interest calculations
-- Risk metrics and performance indicators
+- Simulation réaliste de la dynamique des tontines
+- Modélisation du comportement des participants incluant :
+  - Défaut de paiement
+  - Demande de prêt
+  - Arrivées et départs des membres
+- Suivi financier incluant :
+  - Solde de la trésorerie
+  - Fonds d'urgence
+  - Gestion des prêts
+  - Calcul des intérêts
+- Indicateurs de risque et de performance
 
-## Model Components
+## Composants du Modèle
 
 ### Configuration
-- `TontineConfig`: Global tontine parameters
-- `ParticipantConfig`: Individual participant behavior parameters
+- `TontineConfig` : Paramètres globaux de la tontine
+- `IndividualParticipantConfig` : Paramètres individuels de comportement des participants
 
-### State Tracking
-- `TontineState`: Current state of the tontine
-- `ParticipantState`: Individual member status and history
+### Suivi d'État
+- `TontineState` : État actuel de la tontine
+- `ParticipantState` : Statut et historique de chaque membre
 
-## Usage
+## Utilisation
+Pour démarrer la simulation, installez d'abord les dépendances (voir section Installation) puis exécutez la commande suivante :
 
-[Usage instructions to be added]
+```bash
+python run_simulation.py --config config_sample.json --months 36 --output results
+```
 
-## Parameters
+## Paramètres
 
-The simulation takes into account various parameters including:
-- Initial number of participants
-- Monthly contribution amounts
-- Interest rates
-- Default probabilities
-- Member arrival/exit rates
-- Loan-related parameters
+La simulation prend en compte divers paramètres incluant :
+- Nombre initial de participants
+- Montant des cotisations mensuelles
+- Taux d'intérêts mensuels
+- Probabilités de défaut de paiement
+- Taux d'arrivée et de départ des membres
+- Paramètres relatifs aux prêts
 
-## Output Metrics
+## Indicateurs de Sortie
 
-The simulation provides insights on:
-- Treasury health
-- Default rates
-- Member retention
-- Loan performance
-- Overall tontine sustainability
+La simulation fournit des informations sur :
+- La santé de la trésorerie
+- Les taux de défaut
+- La rétention des membres
+- La performance des prêts
+- La durabilité globale de la tontine
 
-## License
+## Licence
 
-[License information to be added]
+[Informations de licence à ajouter]
 
 ## Fonctionnalités
-- Gestion des participants (adhésion, départ, défaut de paiement, emprunts, remboursements).
+- Gestion des participants (adhésion, départ, défaut de paiement, demande d'emprunt, remboursements).
 - Cotisations mensuelles et accumulation des fonds de la tontine.
-- Attribution et gestion des prêts avec taux d'intérêt.
+- Attribution et gestion des prêts avec taux d'intérêts.
 - Pénalités en cas de retard ou de sortie anticipée.
 - Simulation sur plusieurs cycles avec conditions de faillite.
 - Gestion des fonds d'urgence et des règles d'exclusion.
@@ -79,12 +82,13 @@ La configuration de la tontine est définie par la classe `TontineConfig` avec l
 | `max_cycles` | `int` | Nombre maximum de cycles de la tontine |
 | `emergency_fund_percentage` | `float` | Pourcentage des cotisations réservé au fonds d'urgence |
 | `max_loan_amount` | `float` | Montant maximum qu'un participant peut emprunter |
-| `late_payment_penalty` | `float` | Pénalité en pourcentage pour retard de paiement |
+| `late_payment_penalty` | `float` | Pénalité en cas de retard de paiement |
 | `max_simultaneous_loans` | `int` | Nombre maximum de prêts actifs simultanément |
 | `min_membership_months` | `int` | Durée minimale d'adhésion avant d'être éligible aux prêts |
+| `monthly_distribution_percentage` | `float` | Pourcentage des cotisations redistribué chaque mois |
 
-### ParticipantConfig
-La classe `ParticipantConfig` définit les comportements des participants avec les paramètres suivants :
+### IndividualParticipantConfig
+La classe `IndividualParticipantConfig` définit les comportements des participants avec les paramètres suivants :
 
 | Paramètre | Type | Description |
 |-----------|------|-------------|
@@ -92,9 +96,9 @@ La classe `ParticipantConfig` définit les comportements des participants avec l
 | `loan_prob` | `float` | Probabilité qu'un participant demande un prêt |
 | `loan_reemboursement_prob` | `float` | Probabilité qu'un participant rembourse sa dette à échéance |
 | `exit_probability` | `float` | Probabilité qu'un participant quitte la tontine à la fin d'un cycle |
-| `max_consecutive_defaults` | `int` | Nombre maximal de défauts consécutifs avant exclusion |
-| `credit_score_threshold` | `float` | Score de crédit minimum pour être éligible aux prêts |
-| `max_loan_to_contribution_ratio` | `float` | Ratio maximum prêt/cotisations totales |
-| `early_exit_penalty` | `float` | Pénalité en pourcentage pour sortie anticipée |
-| `guarantor_required` | `bool` | Indique si un garant est requis pour les prêts |
+| `max_consecutive_defaults` | `int` | Nombre maximum de défauts consécutifs avant exclusion |
 
+
+
+
+### TODO : Détails sur la modélisation stochastique et profils de participants
