@@ -40,6 +40,12 @@ class TontineExecutor:
         # Liste des configurations de participants
         self.logger = TontineLogger(self.console, self.output_dir)
     
+    def _advance_date(self, month_num :int):
+        """Advance the simulation date by one month"""
+        self.state.current_date += timedelta(days=30)  # Approximate month
+        self.state.month_in_cycle = (month_num % 12) or 12
+
+
     def run_simulation(self, num_months: int = 60):
         """
         Run the tontine simulation for a specified number of months
@@ -63,12 +69,12 @@ class TontineExecutor:
                 self.monthly_total_collected = 0.0
                 self.monthly_debt_refunded = 0.0
                 self.monthly_beneficiary = "None"
-                
-                if self.state.is_tontine_failed(self.tontine_config):
+                                
+                self._process_month()
+
+                if (self.state.is_tontine_failed(self.tontine_config) == True):
                     self.logger.log_tontine_failure(self.state)
                     break
-                
-                self._process_month()
                 
                 # Log monthly summary with extra parameters
                 self.logger.log_monthly_summary(
@@ -80,7 +86,7 @@ class TontineExecutor:
                     debt_refunded=self.monthly_debt_refunded,
                 )
                 
-                if (month + 1) % 12 == 0:
+                if (month +1 ) % 12 == 0:
                     # Cycle end processing gathers exit and arrival info
                     exited_names = []
                     new_member_names = []
@@ -90,6 +96,7 @@ class TontineExecutor:
                         if random.random() < participant.config.exit_probability:
                             participant.status = ParticipantStatus.EXITED
                             exited_names.append(participant.config.name)
+                            self.state.active_participants.pop(participant_id)
                             return_amount = 0
                             if participant.current_debt > 0:
                                 return_amount = max(0, participant.total_contributions - participant.current_debt)
@@ -110,12 +117,12 @@ class TontineExecutor:
                     self.state.cycle_number += 1
                     self.state.month_in_cycle = 1
                 else:
-                    self._advance_date()
+                    self._advance_date(month + 1)
 
                 progress.update(task, advance=1, description=f"[cyan]Month {month + 1}/{num_months}")
-                #time.sleep(1)
-
-        self.logger.log_simulation_end(self.state)
+               
+        if(self.state.is_tontine_failed(self.tontine_config) == False):
+         self.logger.log_simulation_end(self.state)
     
     def _process_month(self):
         """Process all activities for a single month"""
@@ -134,7 +141,7 @@ class TontineExecutor:
             self._process_end_of_cycle()
             
         
-        self._advance_date()
+        self._advance_date(self.state.month_in_cycle + 1 )
     
     def _collect_contributions(self):
         """Collect monthly contributions from all participants and return total collected"""
@@ -358,10 +365,6 @@ class TontineExecutor:
         
         return participant_id
     
-    def _advance_date(self):
-        """Advance the simulation date by one month"""
-        self.state.current_date += timedelta(days=30)  # Approximate month
-        self.state.month_in_cycle = (self.state.month_in_cycle % 12) + 1
 
 
 class TontineLogger:
@@ -698,4 +701,4 @@ class TontineLogger:
         self.console.print('"')
 
         
-        self.log_cycle_end_participants(state=state)  
+        self.log_cycle_end_participants(state=state)
