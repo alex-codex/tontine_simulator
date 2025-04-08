@@ -15,6 +15,7 @@ class ParticipantState:
     id: str
     config: IndividualParticipantConfig  # Add reference to participant's config
     join_date: datetime
+    exit_date: datetime
     status: ParticipantStatus
     total_contributions: float
     current_debt: float
@@ -35,6 +36,7 @@ class TontineState:
     
     # Participants
     active_participants: Dict[str, ParticipantState]
+    historical_participant : Dict[str, ParticipantState]
     total_participants_history: int
     
     # Financial State
@@ -68,5 +70,5 @@ class TontineState:
     def get_participant_state(self, participant_id: str) -> ParticipantState | None:
         """Get the state of a specific participant"""
         return self.active_participants.get(participant_id)
-
+    
 
