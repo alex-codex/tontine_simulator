@@ -1,11 +1,15 @@
 import random
 from datetime import datetime, timedelta
 import time
+import numpy as np
 import uuid
 from typing import Dict, List, Tuple, Optional
 import json
 import os
 from pathlib import Path
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 
 from rich.console import Console
 from rich.table import Table
@@ -28,8 +32,11 @@ class TontineExecutor:
         participant_configs: List[IndividualParticipantConfig],
         console:Console,
         initial_state: Optional[TontineState] = None,
-        output_dir: str = "simulation_results"
+        output_dir: str = "simulation_results",
+        recap: dict[int , list[int]]={} #dictionnaire consitue de cle: mois en cours , valeur : proportion de membres integres
+       
     ):
+        self.recap = recap
         self.tontine_config = tontine_config
         self.participant_configs = participant_configs
         self.state = initial_state or TontineInitializer.create_initial_state(tontine_config)
@@ -62,20 +69,22 @@ class TontineExecutor:
             console=self.console
         ) as progress:
             task = progress.add_task("[cyan]Running simulation...", total=num_months)
-            
+            membres_actifs=[] # liste du nombre de memebre actifs par mois
             for month in range(num_months):
                 # Initialize monthly accumulators
                 self.monthly_defaults = []      # names of participants who default this month
                 self.monthly_total_collected = 0.0
                 self.monthly_debt_refunded = 0.0
                 self.monthly_beneficiary = "None"
-                                
-                self._process_month()
-
-                if (self.state.is_tontine_failed(self.tontine_config) == True):
-                    self.logger.log_tontine_failure(self.state)
-                    break
                 
+                self.recuperer_donne_synthese(month , self.state.active_participants, self.state.treasury_balance , membres_actifs)
+                if self.state.is_tontine_failed(self.tontine_config)== True :
+                   self.logger.log_tontine_failure(self.state)
+                   self.tracer_ligne(self.recap ,membres_actifs)
+                   return
+                
+                self._process_month() 
+
                 # Log monthly summary with extra parameters
                 self.logger.log_monthly_summary(
                     state=self.state,
@@ -85,17 +94,21 @@ class TontineExecutor:
                     total_collected=self.monthly_total_collected,
                     debt_refunded=self.monthly_debt_refunded,
                 )
+
+                
                 
                 if (month +1 ) % 12 == 0:
                     # Cycle end processing gathers exit and arrival info
                     exited_names = []
                     new_member_names = []
+                    #self.state.current_date += timedelta(days=30)
                     for participant_id, participant in list(self.state.active_participants.items()):
                         if participant.status != ParticipantStatus.ACTIVE:
                             continue
                         if random.random() < participant.config.exit_probability:
                             participant.status = ParticipantStatus.EXITED
                             exited_names.append(participant.config.name)
+                            self.state.historical_participant[participant_id].exit_date = self.state.current_date
                             self.state.active_participants.pop(participant_id)
                             return_amount = 0
                             if participant.current_debt > 0:
@@ -103,11 +116,16 @@ class TontineExecutor:
                             self.state.treasury_balance -= return_amount
                             self.monthly_debt_refunded += return_amount
                             self.state.cycle_exits += 1
+                        else:
+                          mois_restant= num_months - month -1
+                          participant.exit_date = participant.join_date + timedelta(days=30*mois_restant)
                     for _ in range(self._calculate_new_arrivals()):
-                        new_id = self._add_new_participant()
+                        new_id = self._add_new_participant(num_months)
                         new_member_names.append(self.state.active_participants[new_id].config.name)
+                        self.state.historical_participant[new_id]= self.state.active_participants[new_id]
                     
                     self.logger.log_cycle_summary(self.state,exited_names, new_member_names)
+
                     
                     # Reset cycle stats and log detailed participants table at cycle end
                     self.state.cycle_contributions = 0
@@ -121,8 +139,9 @@ class TontineExecutor:
 
                 progress.update(task, advance=1, description=f"[cyan]Month {month + 1}/{num_months}")
                
-        if(self.state.is_tontine_failed(self.tontine_config) == False):
-         self.logger.log_simulation_end(self.state)
+    
+            self.logger.log_simulation_end(self.state)
+            self.tracer_ligne(self.recap, membres_actifs)
     
     def _process_month(self):
         """Process all activities for a single month"""
@@ -330,11 +349,10 @@ class TontineExecutor:
         
         return new_arrivals
     
-    def _add_new_participant(self):
+    def _add_new_participant(self, month : int):
         """Add a new participant to the tontine"""
         participant_id = str(uuid.uuid4())
         
-
         # config the config of a random participant
         ref_config = random.choice(self.participant_configs).clone()
         ref_config.name= f"Participant {self.state.total_participants_history+1}"
@@ -344,6 +362,7 @@ class TontineExecutor:
             id=participant_id,
             config = ref_config,
             join_date=self.state.current_date,
+            exit_date = self.state.current_date + timedelta(days= 30 * (month - self.state.current_date.timetuple().tm_mon)) ,
             status=ParticipantStatus.ACTIVE,
             total_contributions=0.0,
             current_debt=0.0,
@@ -365,7 +384,79 @@ class TontineExecutor:
         
         return participant_id
     
+    def recuperer_donne_synthese(self ,month:int, donnee_mensuelle: dict[str, ParticipantState], fund_each_month : float, membres_actifs):
+        integre =0
+        peu_integre =0
+        for ID in donnee_mensuelle:
+            if(donnee_mensuelle[ID].config.loan_reemboursement_prob > 0.5):
+                integre+=1
+            else:
+                peu_integre+=1    
+        proportion= integre / (integre + peu_integre)
+        if month not in self.recap:
+            self.recap[month]= []
+        
+        membres_actifs.append(len(self.state.active_participants))
+        self.recap[month].append(proportion)
+        self.recap[month].append(fund_each_month)
 
+
+    def tracer_ligne(self,recapitulatif: dict[int , list[int]],  membre : list) -> None:
+          """
+        Args:
+        liste_de_trait: une liste de liste contenant (date entree , date de sortie et probabilite de remboursement)]
+          """
+          x =[] #liste de numero de mois
+          y=[]  # liste de proportion de membres integres
+          fund=[] # liste de valeur du tresor par mois
+          fig, axes = plt.subplots(3 , 1, figsize=(10 , 5))
+          majorlocator_x  = MultipleLocator(6)
+          minorlocator_x  = MultipleLocator(2)
+          rate=MultipleLocator(0.1)
+          minorformatter_x= FormatStrFormatter('%d')
+          majorfomatter_x = FormatStrFormatter('%d')
+          axes[0].set_title('evolution du trésor')
+          axes[0].set_xlabel('mois')
+          axes[0].set_ylabel('evolution du trésor')
+          axes[2].set_title('evolution membres intègres')
+          axes[2].set_xlabel('mois')
+          axes[2].set_ylim(0 , 1)
+          axes[2].set_ylabel('membres intègres(%)')
+          axes[1].set_title('Evolution membres actifs par mois')
+          axes[1].set_xlabel('mois')
+          axes[1].set_ylabel('membres actifs')
+             
+          for mois, proportion in recapitulatif.items():
+              x.append(mois)
+              y.append(proportion[0])
+              fund.append(proportion[1])
+
+          axes[0].plot(x , fund , color ="blue" )
+          axes[0].xaxis.set_major_locator(majorlocator_x)
+          axes[0].xaxis.set_minor_locator(minorlocator_x)
+        
+          fin=max(x)
+          trait = np.linspace(0 , 8 , 20)
+          axes[1].plot([fin]*len(trait), trait, 'y|' , label= "Fin de simulation" )
+          
+          
+          axes[1].plot(x, membre , c="grey")
+          axes[1].xaxis.set_major_locator(majorlocator_x)
+          axes[1].xaxis.set_minor_locator(minorlocator_x)
+          
+          
+          axes[2].plot(x , y , c="red" )
+          axes[2].xaxis.set_major_locator(rate)
+          axes[2].xaxis.set_major_locator(majorlocator_x)
+          axes[2].xaxis.set_minor_locator(minorlocator_x)
+
+          plt.tight_layout(h_pad=1.0)
+          axes[1].legend()
+          axes[2].legend()
+          axes[0].grid(True)
+          axes[1].grid(True)
+          axes[2].grid(True)
+          plt.show()  
 
 class TontineLogger:
     """
@@ -415,6 +506,7 @@ class TontineLogger:
         self.console.print()
         
         header = f"[bold white on blue] TONTINE STATE - MONTH {month_num} (CYCLE {state.cycle_number}, MONTH {state.month_in_cycle}) [/]"
+        self.console.print("ici ca marche")
         self.console.print(Panel(header, expand=False))
         self.console.print()
         
@@ -556,6 +648,9 @@ class TontineLogger:
         self.console.print(f"[red]Treasury balance: ${state.treasury_balance:.2f}")
         self.console.print(f"[red]Emergency fund: ${state.emergency_fund:.2f}")
         self.console.print()
+
+         # save ending state
+        self.save_state_to_json(state, "final")
     
     def log_simulation_end(self, final_state: TontineState):
         """Log the end of a simulation with final statistics"""
@@ -595,7 +690,7 @@ class TontineLogger:
     def save_state_to_json(self, state: TontineState, month_or_label):
         """Save the current state to a JSON file"""
         filename = f"tontine_state_{month_or_label}.json"
-        filepath = self.output_dir / filename
+        filepath = self.output_dir / filename 
         
         # Convert state to serializable dict
         state_dict = self._serialize_state(state)
@@ -611,6 +706,7 @@ class TontineLogger:
             participants_dict[pid] = {
                 "id": participant.id,
                 "join_date": participant.join_date.isoformat(),
+                "exit_date":participant.exit_date ,
                 "status": participant.status.value,
                 "total_contributions": participant.total_contributions,
                 "current_debt": participant.current_debt,
@@ -644,6 +740,9 @@ class TontineLogger:
         }
         
         return state_dict 
+    
+   # def save_participant_state_to_json(self, state: ParticipantState):
+    
 
     def log_monthly_distribution(self, participant: ParticipantState, amount: float, month: int):
         """Log when a participant receives a monthly distribution"""

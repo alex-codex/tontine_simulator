@@ -23,7 +23,7 @@ class TontineInitializer:
                 
             tontine_data = config_data["tontine"]
             
-            num_start = tontine_data.get("num_participants_start", len(config_data.get("participants", [])))
+            num_start = tontine_data.get("num_participants_start", len(config_data.get("participants", []))-1)
             
             # Extract tontine config
             tontine_config = TontineConfig(
@@ -72,15 +72,17 @@ class TontineInitializer:
         """
         Create an initial tontine state based on the configuration
         """
-        start_date = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        start_date = datetime.now().replace(month=1 , day=1, hour=0, minute=0, second=0, microsecond=0)
         
         # Create initial participant states
         active_participants = {}
+        historical_participant = {}
         for participant_config in participant_configs:
             participant = ParticipantState(
                 id=participant_config.id,
                 config=participant_config,
                 join_date=start_date,
+                exit_date= start_date + timedelta(days=30 ),  
                 status=ParticipantStatus.ACTIVE,
                 total_contributions=0.0,
                 current_debt=0.0,
@@ -93,7 +95,7 @@ class TontineInitializer:
                 is_eligible_for_loan=False,
                 monthly_distributions_received=0.0
             )
-            
+            historical_participant[participant_config.id]= participant
             active_participants[participant_config.id] = participant
         
         return TontineState(
@@ -101,6 +103,7 @@ class TontineInitializer:
             cycle_number=1,
             month_in_cycle=1,
             active_participants=active_participants,
+            historical_participant= historical_participant,
             total_participants_history=len(active_participants),
             treasury_balance=0.0,
             emergency_fund=0.0,
