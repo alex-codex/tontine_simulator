@@ -23,9 +23,8 @@ class TontineInitializer:
                 
             tontine_data = config_data["tontine"]
             
-            num_start = tontine_data.get("num_participants_start", len(config_data.get("participants", []))-1)
+            num_start = tontine_data.get("num_participants_start", len(config_data.get("participants", [])))
             
-            # Extract tontine config
             tontine_config = TontineConfig(
                 num_participants_start=num_start,
                 num_partipiants_min=tontine_data["num_partipiants_min"],
@@ -42,10 +41,8 @@ class TontineInitializer:
                 min_membership_months=tontine_data.get("min_membership_months", 3)
             )
             
-            # Extract individual participant configs
             participant_configs = []
             
-            # Participants are explicitly defined in the config
             for participant_data in config_data["participants"]:
                 config = IndividualParticipantConfig(
                     id=participant_data.get("id", str(uuid.uuid4())),
