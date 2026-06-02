@@ -33,7 +33,7 @@ class TontineExecutor:
         console:Console,
         initial_state: Optional[TontineState] = None,
         output_dir: str = "simulation_results",
-        recap: dict[int , list[int]]={} #dictionnaire consitue de cle: mois en cours , valeur : proportion de membres integres
+        recap: dict[int , list[int]]={} 
        
     ):
         self.recap = recap
@@ -44,12 +44,12 @@ class TontineExecutor:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True, parents=True)
         
-        # Liste des configurations de participants
+       
         self.logger = TontineLogger(self.console, self.output_dir)
     
     def _advance_date(self, month_num :int):
         """Advance the simulation date by one month"""
-        self.state.current_date += timedelta(days=30)  # Approximate month
+        self.state.current_date += timedelta(days=30)  
         self.state.month_in_cycle = (month_num % 12) or 12
 
 
@@ -58,7 +58,6 @@ class TontineExecutor:
         Run the tontine simulation for a specified number of months
         """
         self.logger.log_simulation_start(self.tontine_config, self.participant_configs)
-        # Log the initial participants state at simulation start
         self.logger.log_initial_participants(self.state)
         
         with Progress(
@@ -69,23 +68,22 @@ class TontineExecutor:
             console=self.console
         ) as progress:
             task = progress.add_task("[cyan]Running simulation...", total=num_months)
-            membres_actifs=[] # liste du nombre de memebre actifs par mois
+            membres_actifs=[] 
             for month in range(num_months):
-                # Initialize monthly accumulators
-                self.monthly_defaults = []      # names of participants who default this month
+                
+                self.monthly_defaults = []      
                 self.monthly_total_collected = 0.0
                 self.monthly_debt_refunded = 0.0
                 self.monthly_beneficiary = "None"
                 
-                self.recuperer_donne_synthese(month , self.state.active_participants, self.state.treasury_balance , membres_actifs)
-                if self.state.is_tontine_failed(self.tontine_config)== True :
-                   self.logger.log_tontine_failure(self.state)
-                   self.tracer_ligne(self.recap ,membres_actifs)
-                   return
+               # self.recuperer_donne_synthese(month , self.state.active_participants, self.state.treasury_balance , membres_actifs)
+                #if self.state.is_tontine_failed(self.tontine_config)== True :
+                 #  self.logger.log_tontine_failure(self.state)
+                  # self.tracer_ligne(self.recap ,membres_actifs)
+                   #return
                 
                 self._process_month() 
 
-                # Log monthly summary with extra parameters
                 self.logger.log_monthly_summary(
                     state=self.state,
                     month_num=month + 1,
@@ -98,10 +96,8 @@ class TontineExecutor:
                 
                 
                 if (month +1 ) % 12 == 0:
-                    # Cycle end processing gathers exit and arrival info
                     exited_names = []
                     new_member_names = []
-                    #self.state.current_date += timedelta(days=30)
                     for participant_id, participant in list(self.state.active_participants.items()):
                         if participant.status != ParticipantStatus.ACTIVE:
                             continue
@@ -127,7 +123,6 @@ class TontineExecutor:
                     self.logger.log_cycle_summary(self.state,exited_names, new_member_names)
 
                     
-                    # Reset cycle stats and log detailed participants table at cycle end
                     self.state.cycle_contributions = 0
                     self.state.cycle_defaults = 0
                     self.state.cycle_new_members = 0
@@ -173,7 +168,6 @@ class TontineExecutor:
                 continue
                 
             if random.random() < participant.config.default_probability:
-                # Default : Le participant décide de ne pas payer!
                 participant.consecutive_defaults += 1
                 participant.missed_payments += 1
                 
@@ -181,7 +175,6 @@ class TontineExecutor:
                 interest_amount = participant.current_debt * self.tontine_config.monthly_interest_rate
                 participant.current_debt += self.tontine_config.monthly_contrib + interest_amount
                 
-                # Update tontine state
                 self.state.cycle_defaults += 1
                 self.state.default_rate = (
                     self.state.cycle_defaults / 
@@ -189,22 +182,18 @@ class TontineExecutor:
                 )
                 self.monthly_defaults.append(participant.config.name)
             else:
-                # Le par
+              
                 participant.total_contributions += self.tontine_config.monthly_contrib
                 participant.consecutive_defaults = 0
                 participant.last_payment_date = self.state.current_date
                 
-                # Update credit score (improve slightly)
                 total_collected += self.tontine_config.monthly_contrib
-                
-                # Update participant eligibility for loans
                 months_since_join = (self.state.current_date - participant.join_date).days // 30
                 participant.is_eligible_for_loan = (
                     months_since_join >= self.tontine_config.min_membership_months and
                     len(participant.active_loans) < self.tontine_config.max_simultaneous_loans
                 )
         
-        # Update tontine state with total contributions
         self.state.total_contributions_received += total_collected
         self.state.cycle_contributions += total_collected
         self.monthly_total_collected = total_collected
@@ -216,53 +205,43 @@ class TontineExecutor:
         if total_contribution <= 0:
             return
         
-        # Calculate amounts for different purposes
         emergency_amount = total_contribution * self.tontine_config.emergency_fund_percentage
         self.state.emergency_fund += emergency_amount
         
         distributable_amount = total_contribution - emergency_amount
         
-        # Allocate configured percentage to one participant
         distribution_amount = distributable_amount * self.tontine_config.monthly_distribution_percentage
         treasury_amount = distributable_amount - distribution_amount
         
-        # Add to treasury
+        #
         self.state.treasury_balance += treasury_amount
         
-        # Select next participant for distribution
         active_participants = [p for p in self.state.active_participants.values() 
                               if p.status == ParticipantStatus.ACTIVE]
         
         if active_participants:
-            # Sort by participant ID for consistent ordering
             sorted_participants = sorted(active_participants, key=lambda p: p.id)
             
-            # Find next participant who hasn't received payout recently
             next_participant = min(sorted_participants, 
                                   key=lambda p: getattr(p, 'monthly_distributions_received', 0))
             
             if not hasattr(next_participant, 'monthly_distributions_received'):
                 next_participant.monthly_distributions_received = 0
                 
-            # Update participant state
             next_participant.monthly_distributions_received += distribution_amount
             
-            # Update distribution history
             if not hasattr(self.state, 'monthly_distribution_history'):
                 self.state.monthly_distribution_history = []
             self.state.monthly_distribution_history.append(next_participant.id)
             
-            # Record beneficiary name for monthly summary
             self.monthly_beneficiary = next_participant.config.name
             
-            # Log the distribution
             self.logger.log_monthly_distribution(
                 participant=next_participant,
                 amount=distribution_amount,
                 month=self.state.month_in_cycle
             )
         else:
-            # If no eligible participant, add to treasury
             self.state.treasury_balance += distribution_amount
     
     def _process_loan_requests(self):
@@ -271,7 +250,7 @@ class TontineExecutor:
             if (
                 participant.status == ParticipantStatus.ACTIVE and
                 participant.is_eligible_for_loan and
-                random.random() < participant.config.loan_prob  # Use participant-specific probability
+                random.random() < participant.config.loan_prob 
             ):
                 max_possible_loan = min(
                     self.state.treasury_balance * 0.5,
@@ -283,12 +262,10 @@ class TontineExecutor:
                     
                 loan_amount = random.uniform(0.5 * max_possible_loan, max_possible_loan)
                 
-                # Issue the loan
                 participant.active_loans.append(loan_amount)
                 participant.current_debt += loan_amount
                 participant.total_borrowed += loan_amount
                 
-                # Update tontine state
                 self.state.treasury_balance -= loan_amount
                 self.state.total_loans_outstanding += loan_amount
     
@@ -300,35 +277,28 @@ class TontineExecutor:
                 participant.current_debt > 0 and
                 random.random() < participant.config.loan_reemboursement_prob
             ):
-                # Calculate interest due
                 interest_amount = participant.current_debt * self.tontine_config.monthly_interest_rate
                 
-                # Determine repayment amount (principal + interest)
                 repayment_amount = interest_amount
                 
-                # Optionally repay some principal
-                if random.random() > 0.5:  # 50% chance to repay some principal
+                if random.random() > 0.5:  
                     principal_repayment = random.uniform(
                         self.tontine_config.monthly_contrib, 
-                        participant.current_debt * 0.2  # Up to 20% of current debt
+                        participant.current_debt * 0.2
                     )
                     repayment_amount += principal_repayment
                 
-                # Apply the repayment
-                participant.current_debt -= (repayment_amount - interest_amount)  # Subtract principal
+                participant.current_debt -= (repayment_amount - interest_amount) 
                 participant.total_repaid += repayment_amount
                 
-                # Remove fully repaid loans
                 if participant.current_debt <= 0:
                     participant.active_loans = []
                     participant.current_debt = 0
                     
-                # Update tontine state
                 self.state.treasury_balance += repayment_amount
                 self.state.total_loans_outstanding -= (repayment_amount - interest_amount)
                 self.state.total_interest_earned += interest_amount
                 
-                # Update loan recovery metrics
                 if self.state.total_loans_outstanding > 0:
                     self.state.loan_recovery_rate = (
                         self.state.total_interest_earned / 
@@ -343,7 +313,6 @@ class TontineExecutor:
         """Calculate number of new participants arriving at end of cycle"""
         base_arrivals = round(len(self.state.active_participants) * self.tontine_config.arrival_probability)
         
-        # Add some randomness
         variation = random.randint(-2, 2)
         new_arrivals = max(0, base_arrivals + variation)
         
@@ -353,11 +322,9 @@ class TontineExecutor:
         """Add a new participant to the tontine"""
         participant_id = str(uuid.uuid4())
         
-        # config the config of a random participant
         ref_config = random.choice(self.participant_configs).clone()
         ref_config.name= f"Participant {self.state.total_participants_history+1}"
 
-        # Create a new participant
         participant = ParticipantState(
             id=participant_id,
             config = ref_config,
@@ -372,13 +339,11 @@ class TontineExecutor:
             last_payment_date=self.state.current_date,
             total_borrowed=0.0,
             total_repaid=0.0,
-            is_eligible_for_loan=False,  # Not eligible at start
+            is_eligible_for_loan=False,
         )
         
-        # Add to active participants
         self.state.active_participants[participant_id] = participant
         
-        # Update tontine state
         self.state.total_participants_history += 1
         self.state.cycle_new_members += 1
         
@@ -406,9 +371,9 @@ class TontineExecutor:
         Args:
         liste_de_trait: une liste de liste contenant (date entree , date de sortie et probabilite de remboursement)]
           """
-          x =[] #liste de numero de mois
-          y=[]  # liste de proportion de membres integres
-          fund=[] # liste de valeur du tresor par mois
+          x =[] 
+          y=[]  
+          fund=[]
           fig, axes = plt.subplots(3 , 1, figsize=(10 , 5))
           majorlocator_x  = MultipleLocator(6)
           minorlocator_x  = MultipleLocator(2)
@@ -445,7 +410,7 @@ class TontineExecutor:
           axes[1].xaxis.set_minor_locator(minorlocator_x)
           
           
-          axes[2].plot(x , y , c="red" )
+          axes[2].plot(x , y , c="red", label ='proportion des integres' )
           axes[2].xaxis.set_major_locator(rate)
           axes[2].xaxis.set_major_locator(majorlocator_x)
           axes[2].xaxis.set_minor_locator(minorlocator_x)
@@ -488,7 +453,7 @@ class TontineLogger:
         self.console.print(table)
         self.console.print()
         
-        # Display participant configuration
+
         table = Table(title="Participant Configuration")
         table.add_column("Parameter", style="cyan")
         table.add_column("Value", style="green")
@@ -510,7 +475,6 @@ class TontineLogger:
         self.console.print(Panel(header, expand=False))
         self.console.print()
         
-        # Display financial summary
         financial_text = Text()
         financial_text.append("Treasury Balance: ", style="white")
         financial_text.append(f"${state.treasury_balance:.2f}", style="green" if state.treasury_balance > 0 else "red")
@@ -523,7 +487,6 @@ class TontineLogger:
         
         self.console.print(Panel(financial_text, title="Financial Summary", border_style="green"))
         
-        # Display risk metrics
         risk_text = Text()
         risk_text.append("Default Rate: ", style="white")
         risk_text.append(f"{state.default_rate:.2%}", 
@@ -534,7 +497,6 @@ class TontineLogger:
         
         self.console.print(Panel(risk_text, title="Risk Metrics", border_style="yellow"))
         
-        # Display participant summary
         active_count = sum(1 for p in state.active_participants.values() if p.status == ParticipantStatus.ACTIVE)
         defaulted_count = sum(1 for p in state.active_participants.values() if p.status == ParticipantStatus.DEFAULTED)
         exited_count = sum(1 for p in state.active_participants.values() if p.status == ParticipantStatus.EXITED)
@@ -551,7 +513,6 @@ class TontineLogger:
         
         self.console.print(Panel(participant_text, title="Participant Summary", border_style="blue"))
         
-        # Display cycle statistics
         cycle_text = Text()
         cycle_text.append("Cycle Contributions: ", style="white")
         cycle_text.append(f"${state.cycle_contributions:.2f}", style="green")
@@ -564,7 +525,6 @@ class TontineLogger:
         
         self.console.print(Panel(cycle_text, title="Cycle Statistics", border_style="magenta"))
         
-        # Display detailed participant states - NEW SECTION
         self._log_detailed_participant_states(state)
         
         self.console.print()
@@ -573,14 +533,12 @@ class TontineLogger:
         """Log detailed information about each participant's current state"""
         self.console.print("[bold blue]=== DETAILED PARTICIPANT STATES ===[/bold blue]")
         
-        # Create a detailed table for active participants
         active_table = Table(
             title="Active Participants",
             show_lines=True,
             expand=True
         )
         
-        # Add more detailed columns
         active_table.add_column("ID", style="cyan")
         active_table.add_column("Name", style="white")
         active_table.add_column("Status", style="green")
@@ -593,8 +551,7 @@ class TontineLogger:
         active_table.add_column("Exit Risk", style="yellow")
         active_table.add_column("Active Loans", style="blue")
         active_table.add_column("Payment History", style="cyan")
-        
-        # Sort participants by ID
+     
         sorted_participants = sorted(
             state.active_participants.values(),
             key=lambda p: p.id
@@ -602,15 +559,12 @@ class TontineLogger:
         
         for participant in sorted_participants:
             if participant.status == ParticipantStatus.ACTIVE:
-                # Get participant config for probabilities
                 config = participant.config
                 
-                # Format loan information
                 loans_str = ", ".join([f"${loan:.2f}" for loan in participant.active_loans])
                 if not loans_str:
                     loans_str = "None"
                 
-                # Calculate payment history
                 days_since_payment = (state.current_date - participant.last_payment_date).days
                 payment_status = (
                     f"Regular ({days_since_payment}d)" if days_since_payment < 30
@@ -649,7 +603,6 @@ class TontineLogger:
         self.console.print(f"[red]Emergency fund: ${state.emergency_fund:.2f}")
         self.console.print()
 
-         # save ending state
         self.save_state_to_json(state, "final")
     
     def log_simulation_end(self, final_state: TontineState):
@@ -660,10 +613,8 @@ class TontineLogger:
         self.console.print("[bold green]╚═════════════════════════════════════════╝")
         self.console.print()
         
-        # Save final state
         self.save_state_to_json(final_state, "final")
         
-        # Display final statistics
         table = Table(title="Final Tontine Statistics")
         table.add_column("Metric", style="cyan")
         table.add_column("Value", style="green")
@@ -692,7 +643,6 @@ class TontineLogger:
         filename = f"tontine_state_{month_or_label}.json"
         filepath = self.output_dir / filename 
         
-        # Convert state to serializable dict
         state_dict = self._serialize_state(state)
         
         with open(filepath, 'w') as f:
@@ -700,7 +650,6 @@ class TontineLogger:
     
     def _serialize_state(self, state: TontineState) -> dict:
         """Convert TontineState to a serializable dictionary"""
-        # Convert participants
         participants_dict = {}
         for pid, participant in state.active_participants.items():
             participants_dict[pid] = {
@@ -719,7 +668,6 @@ class TontineLogger:
                 "is_eligible_for_loan": participant.is_eligible_for_loan,
             }
         
-        # Convert state
         state_dict = {
             "current_date": state.current_date.isoformat(),
             "cycle_number": state.cycle_number,
@@ -796,7 +744,7 @@ class TontineLogger:
         else:
             self.console.print("[bold blue]No new members this cycle.[/bold blue]")
         
-        #Total contribution
+        
         self.console.print('"')
 
         
